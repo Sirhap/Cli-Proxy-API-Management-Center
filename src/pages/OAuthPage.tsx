@@ -16,6 +16,7 @@ import iconGemini from '@/assets/icons/gemini.svg';
 import iconKimiLight from '@/assets/icons/kimi-light.svg';
 import iconKimiDark from '@/assets/icons/kimi-dark.svg';
 import iconVertex from '@/assets/icons/vertex.svg';
+import { OAuthPlusSection } from './OAuthPlusSection';
 
 interface ProviderState {
   url?: string;
@@ -489,6 +490,8 @@ export function OAuthPage() {
             </div>
           );
         })}
+
+        <OAuthPlusSection />
 
         {/* Vertex JSON 登录 */}
         <Card
