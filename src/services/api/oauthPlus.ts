@@ -11,6 +11,7 @@ export type OAuthPlusProvider =
   | 'cursor'
   | 'codebuddy'
   | 'kilo'
+  | 'kiro-portal'
   | 'kiro-aws'
   | 'kiro-aws-authcode'
   | 'kiro-idc'
@@ -72,6 +73,7 @@ export interface KiroImportResponse {
 const CALLBACK_PROVIDER_MAP: Partial<Record<OAuthPlusProvider, string>> = {
   'kiro-aws-authcode': 'kiro',
   'kiro-idc': 'kiro',
+  'kiro-portal': 'kiro',
   'kiro-google': 'kiro',
   'kiro-github': 'kiro'
 };
@@ -82,6 +84,7 @@ const ROUTE_PROVIDER_MAP: Record<OAuthPlusProvider, string> = {
   cursor: 'cursor',
   codebuddy: 'codebuddy',
   kilo: 'kilo',
+  'kiro-portal': 'kiro-portal',
   'kiro-aws': 'kiro',
   'kiro-aws-authcode': 'kiro-aws-authcode',
   'kiro-idc': 'kiro-idc',

@@ -86,6 +86,7 @@ const PROVIDERS: {
   { id: 'cursor', titleKey: 'auth_login.cursor_oauth_title', hintKey: 'auth_login.cursor_oauth_hint', urlLabelKey: 'auth_login.cursor_oauth_url_label', badge: 'CU' },
   { id: 'codebuddy', titleKey: 'auth_login.codebuddy_oauth_title', hintKey: 'auth_login.codebuddy_oauth_hint', urlLabelKey: 'auth_login.codebuddy_oauth_url_label', badge: 'CB' },
   { id: 'kilo', titleKey: 'auth_login.kilo_oauth_title', hintKey: 'auth_login.kilo_oauth_hint', urlLabelKey: 'auth_login.kilo_oauth_url_label', badge: 'KL' },
+  { id: 'kiro-portal', titleKey: 'auth_login.kiro_portal_oauth_title', hintKey: 'auth_login.kiro_portal_oauth_hint', urlLabelKey: 'auth_login.kiro_portal_oauth_url_label', badge: 'KP' },
   { id: 'kiro-aws', titleKey: 'auth_login.kiro_aws_oauth_title', hintKey: 'auth_login.kiro_aws_oauth_hint', urlLabelKey: 'auth_login.kiro_aws_oauth_url_label', badge: 'KA' },
   { id: 'kiro-aws-authcode', titleKey: 'auth_login.kiro_aws_authcode_oauth_title', hintKey: 'auth_login.kiro_aws_authcode_oauth_hint', urlLabelKey: 'auth_login.kiro_aws_authcode_oauth_url_label', badge: 'KC' },
   { id: 'kiro-idc', titleKey: 'auth_login.kiro_idc_oauth_title', hintKey: 'auth_login.kiro_idc_oauth_hint', urlLabelKey: 'auth_login.kiro_idc_oauth_url_label', badge: 'KI' },
