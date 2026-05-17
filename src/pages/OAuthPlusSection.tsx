@@ -73,27 +73,35 @@ function getErrorStatus(error: unknown): number | undefined {
   return typeof error.status === 'number' ? error.status : undefined;
 }
 
-const PROVIDERS: {
+type OAuthProviderCard = {
   id: OAuthPlusProvider;
   titleKey: string;
   hintKey: string;
   urlLabelKey: string;
   icon?: string;
   badge?: string;
-}[] = [
+};
+
+const GENERAL_PROVIDERS: OAuthProviderCard[] = [
   { id: 'codex-device', titleKey: 'auth_login.codex_device_oauth_title', hintKey: 'auth_login.codex_device_oauth_hint', urlLabelKey: 'auth_login.codex_device_oauth_url_label', icon: iconCodex },
   { id: 'iflow', titleKey: 'auth_login.iflow_oauth_title', hintKey: 'auth_login.iflow_oauth_hint', urlLabelKey: 'auth_login.iflow_oauth_url_label', icon: iconIflow },
   { id: 'cursor', titleKey: 'auth_login.cursor_oauth_title', hintKey: 'auth_login.cursor_oauth_hint', urlLabelKey: 'auth_login.cursor_oauth_url_label', badge: 'CU' },
   { id: 'codebuddy', titleKey: 'auth_login.codebuddy_oauth_title', hintKey: 'auth_login.codebuddy_oauth_hint', urlLabelKey: 'auth_login.codebuddy_oauth_url_label', badge: 'CB' },
   { id: 'kilo', titleKey: 'auth_login.kilo_oauth_title', hintKey: 'auth_login.kilo_oauth_hint', urlLabelKey: 'auth_login.kilo_oauth_url_label', badge: 'KL' },
+  { id: 'github', titleKey: 'auth_login.github_oauth_title', hintKey: 'auth_login.github_oauth_hint', urlLabelKey: 'auth_login.github_oauth_url_label', badge: 'GH' },
+  { id: 'gitlab', titleKey: 'auth_login.gitlab_oauth_title', hintKey: 'auth_login.gitlab_oauth_hint', urlLabelKey: 'auth_login.gitlab_oauth_url_label', badge: 'GL' }
+];
+
+const KIRO_PRIMARY_PROVIDERS: OAuthProviderCard[] = [
   { id: 'kiro-portal', titleKey: 'auth_login.kiro_portal_oauth_title', hintKey: 'auth_login.kiro_portal_oauth_hint', urlLabelKey: 'auth_login.kiro_portal_oauth_url_label', badge: 'KP' },
   { id: 'kiro-aws', titleKey: 'auth_login.kiro_aws_oauth_title', hintKey: 'auth_login.kiro_aws_oauth_hint', urlLabelKey: 'auth_login.kiro_aws_oauth_url_label', badge: 'KA' },
   { id: 'kiro-aws-authcode', titleKey: 'auth_login.kiro_aws_authcode_oauth_title', hintKey: 'auth_login.kiro_aws_authcode_oauth_hint', urlLabelKey: 'auth_login.kiro_aws_authcode_oauth_url_label', badge: 'KC' },
-  { id: 'kiro-idc', titleKey: 'auth_login.kiro_idc_oauth_title', hintKey: 'auth_login.kiro_idc_oauth_hint', urlLabelKey: 'auth_login.kiro_idc_oauth_url_label', badge: 'KI' },
+  { id: 'kiro-idc', titleKey: 'auth_login.kiro_idc_oauth_title', hintKey: 'auth_login.kiro_idc_oauth_hint', urlLabelKey: 'auth_login.kiro_idc_oauth_url_label', badge: 'KI' }
+];
+
+const KIRO_LEGACY_PROVIDERS: OAuthProviderCard[] = [
   { id: 'kiro-google', titleKey: 'auth_login.kiro_google_oauth_title', hintKey: 'auth_login.kiro_google_oauth_hint', urlLabelKey: 'auth_login.kiro_google_oauth_url_label', badge: 'KG' },
-  { id: 'kiro-github', titleKey: 'auth_login.kiro_github_oauth_title', hintKey: 'auth_login.kiro_github_oauth_hint', urlLabelKey: 'auth_login.kiro_github_oauth_url_label', badge: 'KH' },
-  { id: 'github', titleKey: 'auth_login.github_oauth_title', hintKey: 'auth_login.github_oauth_hint', urlLabelKey: 'auth_login.github_oauth_url_label', badge: 'GH' },
-  { id: 'gitlab', titleKey: 'auth_login.gitlab_oauth_title', hintKey: 'auth_login.gitlab_oauth_hint', urlLabelKey: 'auth_login.gitlab_oauth_url_label', badge: 'GL' }
+  { id: 'kiro-github', titleKey: 'auth_login.kiro_github_oauth_title', hintKey: 'auth_login.kiro_github_oauth_hint', urlLabelKey: 'auth_login.kiro_github_oauth_url_label', badge: 'KH' }
 ];
 
 const CALLBACK_SUPPORTED: OAuthPlusProvider[] = [
@@ -355,91 +363,109 @@ export function OAuthPlusSection() {
     }
   };
 
+  const renderProviderCard = (provider: OAuthProviderCard) => {
+    const state = states[provider.id] || {};
+    const canSubmitCallback = CALLBACK_SUPPORTED.includes(provider.id) && Boolean(state.url);
+    const loginButtonLabel = state.status === 'success' ? t('auth_login.login_another_account') : t(getAuthKey(provider.id, 'oauth_button'));
+    const statusBadgeClassName = ['status-badge', state.status === 'success' ? 'success' : '', state.status === 'error' ? 'error' : '']
+      .filter(Boolean)
+      .join(' ');
+    return (
+      <Card
+        key={provider.id}
+        title={
+          <span className={styles.cardTitle}>
+            {provider.icon ? <img src={provider.icon} alt="" className={styles.cardTitleIcon} /> : <span className={styles.providerBadge}>{provider.badge}</span>}
+            {t(provider.titleKey)}
+          </span>
+        }
+        extra={<Button onClick={() => startAuth(provider.id)} loading={state.polling}>{loginButtonLabel}</Button>}
+      >
+        <div className={styles.cardContent}>
+          <div className={styles.cardHint}>{t(provider.hintKey)}</div>
+          {provider.id === 'cursor' && (
+            <Input
+              label={t('auth_login.cursor_label_label')}
+              hint={t('auth_login.cursor_label_hint')}
+              value={state.label || ''}
+              disabled={Boolean(state.polling)}
+              onChange={(e) => updateProviderState(provider.id, { label: e.target.value })}
+              placeholder={t('auth_login.cursor_label_placeholder')}
+            />
+          )}
+          {provider.id === 'gitlab' && (
+            <>
+              <Input label={t('auth_login.gitlab_base_url_label')} hint={t('auth_login.gitlab_base_url_hint')} value={state.gitlabBaseUrl || ''} disabled={Boolean(state.polling)} onChange={(e) => updateProviderState(provider.id, { gitlabBaseUrl: e.target.value })} placeholder={t('auth_login.gitlab_base_url_placeholder')} />
+              <Input label={t('auth_login.gitlab_client_id_label')} hint={t('auth_login.gitlab_client_id_hint')} value={state.gitlabClientId || ''} disabled={Boolean(state.polling)} onChange={(e) => updateProviderState(provider.id, { gitlabClientId: e.target.value })} placeholder={t('auth_login.gitlab_client_id_placeholder')} />
+              <Input label={t('auth_login.gitlab_client_secret_label')} hint={t('auth_login.gitlab_client_secret_hint')} value={state.gitlabClientSecret || ''} disabled={Boolean(state.polling)} onChange={(e) => updateProviderState(provider.id, { gitlabClientSecret: e.target.value })} placeholder={t('auth_login.gitlab_client_secret_placeholder')} />
+            </>
+          )}
+          {provider.id === 'kiro-idc' && (
+            <>
+              <Input label={t('auth_login.kiro_idc_start_url_label')} hint={t('auth_login.kiro_idc_start_url_hint')} value={state.kiroStartUrl || ''} disabled={Boolean(state.polling)} onChange={(e) => updateProviderState(provider.id, { kiroStartUrl: e.target.value })} placeholder={t('auth_login.kiro_idc_start_url_placeholder')} />
+              <Input label={t('auth_login.kiro_idc_region_label')} hint={t('auth_login.kiro_idc_region_hint')} value={state.kiroRegion || ''} disabled={Boolean(state.polling)} onChange={(e) => updateProviderState(provider.id, { kiroRegion: e.target.value })} placeholder={t('auth_login.kiro_idc_region_placeholder')} />
+              <Input label={t('auth_login.kiro_idc_flow_label')} hint={t('auth_login.kiro_idc_flow_hint')} value={state.kiroFlow || ''} disabled={Boolean(state.polling)} onChange={(e) => updateProviderState(provider.id, { kiroFlow: e.target.value })} placeholder={t('auth_login.kiro_idc_flow_placeholder')} />
+            </>
+          )}
+          {state.url && (
+            <div className={styles.authUrlBox}>
+              <div className={styles.authUrlLabel}>{t(provider.urlLabelKey)}</div>
+              <div className={styles.authUrlValue}>{state.url}</div>
+              {state.userCode && <div className={styles.authUserCode}>{t('auth_login.device_code_label')}: <strong>{state.userCode}</strong></div>}
+              <div className={styles.authUrlActions}>
+                <Button variant="secondary" size="sm" onClick={() => copyLink(state.url!)}>{t(getAuthKey(provider.id, 'copy_link'))}</Button>
+                <Button variant="secondary" size="sm" onClick={() => window.open(state.url, '_blank', 'noopener,noreferrer')}>{t(getAuthKey(provider.id, 'open_link'))}</Button>
+              </div>
+            </div>
+          )}
+          {canSubmitCallback && (
+            <div className={styles.callbackSection}>
+              <Input label={t('auth_login.oauth_callback_label')} hint={t('auth_login.oauth_callback_hint')} value={state.callbackUrl || ''} onChange={(e) => updateProviderState(provider.id, { callbackUrl: e.target.value, callbackStatus: undefined, callbackError: undefined })} placeholder={t('auth_login.oauth_callback_placeholder')} />
+              <div className={styles.callbackActions}>
+                <Button variant="secondary" size="sm" onClick={() => submitCallback(provider.id)} loading={state.callbackSubmitting}>{t('auth_login.oauth_callback_button')}</Button>
+              </div>
+              {state.callbackStatus === 'success' && state.status === 'waiting' && <div className="status-badge success">{t('auth_login.oauth_callback_status_success')}</div>}
+              {state.callbackStatus === 'error' && <div className="status-badge error">{t('auth_login.oauth_callback_status_error')} {state.callbackError || ''}</div>}
+            </div>
+          )}
+          {state.status && state.status !== 'idle' && (
+            <div className={statusBadgeClassName}>
+              {state.status === 'success'
+                ? t(getAuthKey(provider.id, 'oauth_status_success'))
+                : state.status === 'error'
+                  ? `${t(getAuthKey(provider.id, 'oauth_status_error'))} ${state.error || ''}`
+                  : t(getAuthKey(provider.id, 'oauth_status_waiting'))}
+            </div>
+          )}
+          {state.status === 'success' && (
+            <div className={styles.successActions}>
+              <Button variant="secondary" size="sm" onClick={() => navigate('/auth-files')}>{t('auth_login.view_auth_files')}</Button>
+            </div>
+          )}
+        </div>
+      </Card>
+    );
+  };
+
   return (
     <>
-      {PROVIDERS.map((provider) => {
-        const state = states[provider.id] || {};
-        const canSubmitCallback = CALLBACK_SUPPORTED.includes(provider.id) && Boolean(state.url);
-        const loginButtonLabel = state.status === 'success' ? t('auth_login.login_another_account') : t(getAuthKey(provider.id, 'oauth_button'));
-        const statusBadgeClassName = ['status-badge', state.status === 'success' ? 'success' : '', state.status === 'error' ? 'error' : '']
-          .filter(Boolean)
-          .join(' ');
-        return (
-          <Card
-            key={provider.id}
-            title={
-              <span className={styles.cardTitle}>
-                {provider.icon ? <img src={provider.icon} alt="" className={styles.cardTitleIcon} /> : <span className={styles.providerBadge}>{provider.badge}</span>}
-                {t(provider.titleKey)}
-              </span>
-            }
-            extra={<Button onClick={() => startAuth(provider.id)} loading={state.polling}>{loginButtonLabel}</Button>}
-          >
-            <div className={styles.cardContent}>
-              <div className={styles.cardHint}>{t(provider.hintKey)}</div>
-              {provider.id === 'cursor' && (
-                <Input
-                  label={t('auth_login.cursor_label_label')}
-                  hint={t('auth_login.cursor_label_hint')}
-                  value={state.label || ''}
-                  disabled={Boolean(state.polling)}
-                  onChange={(e) => updateProviderState(provider.id, { label: e.target.value })}
-                  placeholder={t('auth_login.cursor_label_placeholder')}
-                />
-              )}
-              {provider.id === 'gitlab' && (
-                <>
-                  <Input label={t('auth_login.gitlab_base_url_label')} hint={t('auth_login.gitlab_base_url_hint')} value={state.gitlabBaseUrl || ''} disabled={Boolean(state.polling)} onChange={(e) => updateProviderState(provider.id, { gitlabBaseUrl: e.target.value })} placeholder={t('auth_login.gitlab_base_url_placeholder')} />
-                  <Input label={t('auth_login.gitlab_client_id_label')} hint={t('auth_login.gitlab_client_id_hint')} value={state.gitlabClientId || ''} disabled={Boolean(state.polling)} onChange={(e) => updateProviderState(provider.id, { gitlabClientId: e.target.value })} placeholder={t('auth_login.gitlab_client_id_placeholder')} />
-                  <Input label={t('auth_login.gitlab_client_secret_label')} hint={t('auth_login.gitlab_client_secret_hint')} value={state.gitlabClientSecret || ''} disabled={Boolean(state.polling)} onChange={(e) => updateProviderState(provider.id, { gitlabClientSecret: e.target.value })} placeholder={t('auth_login.gitlab_client_secret_placeholder')} />
-                </>
-              )}
-              {provider.id === 'kiro-idc' && (
-                <>
-                  <Input label={t('auth_login.kiro_idc_start_url_label')} hint={t('auth_login.kiro_idc_start_url_hint')} value={state.kiroStartUrl || ''} disabled={Boolean(state.polling)} onChange={(e) => updateProviderState(provider.id, { kiroStartUrl: e.target.value })} placeholder={t('auth_login.kiro_idc_start_url_placeholder')} />
-                  <Input label={t('auth_login.kiro_idc_region_label')} hint={t('auth_login.kiro_idc_region_hint')} value={state.kiroRegion || ''} disabled={Boolean(state.polling)} onChange={(e) => updateProviderState(provider.id, { kiroRegion: e.target.value })} placeholder={t('auth_login.kiro_idc_region_placeholder')} />
-                  <Input label={t('auth_login.kiro_idc_flow_label')} hint={t('auth_login.kiro_idc_flow_hint')} value={state.kiroFlow || ''} disabled={Boolean(state.polling)} onChange={(e) => updateProviderState(provider.id, { kiroFlow: e.target.value })} placeholder={t('auth_login.kiro_idc_flow_placeholder')} />
-                </>
-              )}
-              {state.url && (
-                <div className={styles.authUrlBox}>
-                  <div className={styles.authUrlLabel}>{t(provider.urlLabelKey)}</div>
-                  <div className={styles.authUrlValue}>{state.url}</div>
-                  {state.userCode && <div className={styles.authUserCode}>{t('auth_login.device_code_label')}: <strong>{state.userCode}</strong></div>}
-                  <div className={styles.authUrlActions}>
-                    <Button variant="secondary" size="sm" onClick={() => copyLink(state.url!)}>{t(getAuthKey(provider.id, 'copy_link'))}</Button>
-                    <Button variant="secondary" size="sm" onClick={() => window.open(state.url, '_blank', 'noopener,noreferrer')}>{t(getAuthKey(provider.id, 'open_link'))}</Button>
-                  </div>
-                </div>
-              )}
-              {canSubmitCallback && (
-                <div className={styles.callbackSection}>
-                  <Input label={t('auth_login.oauth_callback_label')} hint={t('auth_login.oauth_callback_hint')} value={state.callbackUrl || ''} onChange={(e) => updateProviderState(provider.id, { callbackUrl: e.target.value, callbackStatus: undefined, callbackError: undefined })} placeholder={t('auth_login.oauth_callback_placeholder')} />
-                  <div className={styles.callbackActions}>
-                    <Button variant="secondary" size="sm" onClick={() => submitCallback(provider.id)} loading={state.callbackSubmitting}>{t('auth_login.oauth_callback_button')}</Button>
-                  </div>
-                  {state.callbackStatus === 'success' && state.status === 'waiting' && <div className="status-badge success">{t('auth_login.oauth_callback_status_success')}</div>}
-                  {state.callbackStatus === 'error' && <div className="status-badge error">{t('auth_login.oauth_callback_status_error')} {state.callbackError || ''}</div>}
-                </div>
-              )}
-              {state.status && state.status !== 'idle' && (
-                <div className={statusBadgeClassName}>
-                  {state.status === 'success'
-                    ? t(getAuthKey(provider.id, 'oauth_status_success'))
-                    : state.status === 'error'
-                      ? `${t(getAuthKey(provider.id, 'oauth_status_error'))} ${state.error || ''}`
-                      : t(getAuthKey(provider.id, 'oauth_status_waiting'))}
-                </div>
-              )}
-              {state.status === 'success' && (
-                <div className={styles.successActions}>
-                  <Button variant="secondary" size="sm" onClick={() => navigate('/auth-files')}>{t('auth_login.view_auth_files')}</Button>
-                </div>
-              )}
-            </div>
-          </Card>
-        );
-      })}
+      {GENERAL_PROVIDERS.map(renderProviderCard)}
+
+      <section className={styles.providerSection}>
+        <div className={styles.sectionHeading}>
+          <h3>{t('auth_login.kiro_recommended_section_title')}</h3>
+          <p>{t('auth_login.kiro_recommended_section_hint')}</p>
+        </div>
+        {KIRO_PRIMARY_PROVIDERS.map(renderProviderCard)}
+      </section>
+
+      <section className={styles.providerSection}>
+        <div className={styles.sectionHeading}>
+          <h3>{t('auth_login.kiro_legacy_section_title')}</h3>
+          <p>{t('auth_login.kiro_legacy_section_hint')}</p>
+        </div>
+        {KIRO_LEGACY_PROVIDERS.map(renderProviderCard)}
+      </section>
 
       <Card title={t('auth_login.kiro_import_title')} extra={<Button onClick={importKiroToken} loading={kiroImportState.loading}>{t('auth_login.kiro_import_button')}</Button>}>
         <div className={styles.cardContent}>
