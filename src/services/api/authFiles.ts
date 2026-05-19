@@ -4,11 +4,18 @@
 
 import { apiClient } from './client';
 import type { AuthFilesResponse } from '@/types/authFile';
-import type { OAuthModelAliasEntry } from '@/types';
+import type { OAuthModelAliasEntry, WindsurfQuotaPayload } from '@/types';
 import { parseTimestampMs } from '@/utils/timestamp';
 
 type StatusError = { status?: number };
 type AuthFileStatusResponse = { status: string; disabled: boolean };
+type WindsurfQuotaResponse = {
+  status: string;
+  name: string;
+  id?: string;
+  provider?: string;
+  quota?: WindsurfQuotaPayload;
+};
 type AuthFileEntry = AuthFilesResponse['files'][number];
 export type AuthFileFieldsPatch = {
   prefix?: string;
@@ -410,6 +417,17 @@ export const authFilesApi = {
 
   patchFields: (name: string, fields: AuthFileFieldsPatch) =>
     apiClient.patch('/auth-files/fields', { name, ...fields }),
+
+  refreshQuota: (name: string) =>
+    apiClient.post<{ status: string; name: string; id?: string; provider?: string; cleared_models?: number }>(
+      '/auth-files/quota-refresh',
+      { name }
+    ),
+
+  getWindsurfQuota: async (name: string): Promise<WindsurfQuotaPayload> => {
+    const response = await apiClient.post<WindsurfQuotaResponse>('/auth-files/windsurf-quota', { name });
+    return response.quota ?? {};
+  },
 
   uploadFiles: async (files: File[]): Promise<AuthFileBatchUploadResult> => {
     const requestedNames = files.map((file) => file.name);

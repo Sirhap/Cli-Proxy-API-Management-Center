@@ -28,6 +28,9 @@ import type {
   GeminiCliUserTier,
   KimiQuotaRow,
   KimiQuotaState,
+  WindsurfQuotaPayload,
+  WindsurfQuotaRow,
+  WindsurfQuotaState,
 } from '@/types';
 import { apiCallApi, authFilesApi, getApiCallErrorMessage } from '@/services/api';
 import { useQuotaStore } from '@/stores';
@@ -74,6 +77,7 @@ import {
   isGeminiCliFile,
   isKimiFile,
   isRuntimeOnlyAuthFile,
+  isWindsurfFile,
 } from '@/utils/quota';
 import { normalizeAuthIndex } from '@/utils/authIndex';
 import type { QuotaRenderHelpers } from './QuotaCard';
@@ -81,7 +85,7 @@ import styles from '@/pages/QuotaPage.module.scss';
 
 type QuotaUpdater<T> = T | ((prev: T) => T);
 
-type QuotaType = 'antigravity' | 'claude' | 'codex' | 'gemini-cli' | 'kimi';
+type QuotaType = 'antigravity' | 'claude' | 'codex' | 'gemini-cli' | 'kimi' | 'windsurf';
 
 const DEFAULT_ANTIGRAVITY_PROJECT_ID = 'bamboo-precept-lgxtn';
 const QUOTA_PROGRESS_HIGH_THRESHOLD = 70;
@@ -98,11 +102,13 @@ export interface QuotaStore {
   codexQuota: Record<string, CodexQuotaState>;
   geminiCliQuota: Record<string, GeminiCliQuotaState>;
   kimiQuota: Record<string, KimiQuotaState>;
+  windsurfQuota: Record<string, WindsurfQuotaState>;
   setAntigravityQuota: (updater: QuotaUpdater<Record<string, AntigravityQuotaState>>) => void;
   setClaudeQuota: (updater: QuotaUpdater<Record<string, ClaudeQuotaState>>) => void;
   setCodexQuota: (updater: QuotaUpdater<Record<string, CodexQuotaState>>) => void;
   setGeminiCliQuota: (updater: QuotaUpdater<Record<string, GeminiCliQuotaState>>) => void;
   setKimiQuota: (updater: QuotaUpdater<Record<string, KimiQuotaState>>) => void;
+  setWindsurfQuota: (updater: QuotaUpdater<Record<string, WindsurfQuotaState>>) => void;
   clearQuotaCache: () => void;
 }
 
@@ -1275,6 +1281,143 @@ const fetchKimiQuota = async (
   return buildKimiQuotaRows(payload);
 };
 
+const unixSecondsToLocale = (value?: string): string | undefined => {
+  const seconds = normalizeNumberValue(value);
+  if (seconds === null || seconds <= 0) return undefined;
+  return new Date(seconds * 1000).toLocaleString();
+};
+
+const buildWindsurfQuotaRows = (payload: WindsurfQuotaPayload): WindsurfQuotaRow[] => {
+  const rows: WindsurfQuotaRow[] = [];
+  const monthlyPrompt = normalizeNumberValue(payload.monthly_prompt_credits);
+  const availablePrompt = normalizeNumberValue(payload.available_prompt_credits);
+  const usedPrompt = normalizeNumberValue(payload.used_prompt_credits);
+
+  if (monthlyPrompt !== null && monthlyPrompt > 0) {
+    const used =
+      usedPrompt !== null
+        ? usedPrompt
+        : availablePrompt !== null
+          ? Math.max(0, monthlyPrompt - availablePrompt)
+          : null;
+    const remainingPercent =
+      availablePrompt !== null
+        ? Math.max(0, Math.min(100, (availablePrompt / monthlyPrompt) * 100))
+        : null;
+    rows.push({
+      id: 'monthly-prompt',
+      labelKey: 'windsurf_quota.monthly_prompt',
+      used,
+      limit: monthlyPrompt,
+      remainingPercent,
+      amountLabel:
+        used !== null
+          ? `${Math.round(used)} / ${Math.round(monthlyPrompt)}`
+          : `${Math.round(monthlyPrompt)}`,
+    });
+  }
+
+  const flexCredits = normalizeNumberValue(payload.available_flex_credits);
+  if (flexCredits !== null) {
+    rows.push({
+      id: 'flex',
+      labelKey: 'windsurf_quota.flex_credits',
+      used: null,
+      limit: null,
+      remainingPercent: flexCredits > 0 ? 100 : 0,
+      amountLabel: `${Math.round(flexCredits)}`,
+    });
+  }
+
+  const dailyRemaining = normalizeNumberValue(payload.daily_quota_remaining_percent);
+  if (dailyRemaining !== null) {
+    rows.push({
+      id: 'daily',
+      labelKey: 'windsurf_quota.daily_remaining',
+      used: null,
+      limit: null,
+      remainingPercent: Math.max(0, Math.min(100, dailyRemaining)),
+      resetHint: unixSecondsToLocale(payload.daily_quota_reset_at_unix),
+    });
+  }
+
+  const weeklyRemaining = normalizeNumberValue(payload.weekly_quota_remaining_percent);
+  if (weeklyRemaining !== null) {
+    rows.push({
+      id: 'weekly',
+      labelKey: 'windsurf_quota.weekly_remaining',
+      used: null,
+      limit: null,
+      remainingPercent: Math.max(0, Math.min(100, weeklyRemaining)),
+      resetHint: unixSecondsToLocale(payload.weekly_quota_reset_at_unix),
+    });
+  }
+
+  return rows;
+};
+
+const fetchWindsurfQuota = async (file: AuthFileItem): Promise<WindsurfQuotaPayload> =>
+  authFilesApi.getWindsurfQuota(file.name);
+
+const renderWindsurfItems = (
+  quota: WindsurfQuotaState,
+  t: TFunction,
+  helpers: QuotaRenderHelpers
+): ReactNode => {
+  const { styles: styleMap, QuotaProgressBar } = helpers;
+  const { createElement: h, Fragment } = React;
+  const rows = quota.rows ?? [];
+  const nodes: ReactNode[] = [];
+
+  if (quota.planName || quota.email) {
+    nodes.push(
+      h(
+        'div',
+        { key: 'plan', className: styleMap.codexPlan },
+        h('span', { className: styleMap.codexPlanLabel }, t('windsurf_quota.plan_label')),
+        h('span', { className: styleMap.codexPlanValue }, [quota.planName, quota.email].filter(Boolean).join(' · '))
+      )
+    );
+  }
+
+  if (rows.length === 0) {
+    nodes.push(
+      h('div', { key: 'empty', className: styleMap.quotaMessage }, t('windsurf_quota.empty_data'))
+    );
+    return h(Fragment, null, ...nodes);
+  }
+
+  nodes.push(
+    ...rows.map((row) => {
+      const remaining = row.remainingPercent === null ? null : Math.round(row.remainingPercent);
+      const percentLabel = remaining === null ? '--' : `${remaining}%`;
+      return h(
+        'div',
+        { key: row.id, className: styleMap.quotaRow },
+        h(
+          'div',
+          { className: styleMap.quotaRowHeader },
+          h('span', { className: styleMap.quotaModel }, t(row.labelKey)),
+          h(
+            'div',
+            { className: styleMap.quotaMeta },
+            h('span', { className: styleMap.quotaPercent }, percentLabel),
+            row.amountLabel ? h('span', { className: styleMap.quotaAmount }, row.amountLabel) : null,
+            row.resetHint ? h('span', { className: styleMap.quotaReset }, row.resetHint) : null
+          )
+        ),
+        h(QuotaProgressBar, {
+          percent: row.remainingPercent,
+          highThreshold: QUOTA_PROGRESS_HIGH_THRESHOLD,
+          mediumThreshold: QUOTA_PROGRESS_MEDIUM_THRESHOLD,
+        })
+      );
+    })
+  );
+
+  return h(Fragment, null, ...nodes);
+};
+
 const renderKimiItems = (
   quota: KimiQuotaState,
   t: TFunction,
@@ -1352,4 +1495,31 @@ export const KIMI_CONFIG: QuotaConfig<KimiQuotaState, KimiQuotaRow[]> = {
   controlClassName: styles.kimiControl,
   gridClassName: styles.kimiGrid,
   renderQuotaItems: renderKimiItems,
+};
+
+export const WINDSURF_CONFIG: QuotaConfig<WindsurfQuotaState, WindsurfQuotaPayload> = {
+  type: 'windsurf',
+  i18nPrefix: 'windsurf_quota',
+  filterFn: (file) => isWindsurfFile(file) && !isRuntimeOnlyAuthFile(file) && !isDisabledAuthFile(file),
+  fetchQuota: fetchWindsurfQuota,
+  storeSelector: (state) => state.windsurfQuota,
+  storeSetter: 'setWindsurfQuota',
+  buildLoadingState: () => ({ status: 'loading', rows: [] }),
+  buildSuccessState: (payload) => ({
+    status: 'success',
+    rows: buildWindsurfQuotaRows(payload),
+    planName: payload.plan_name ?? null,
+    email: payload.email ?? null,
+  }),
+  buildErrorState: (message, status) => ({
+    status: 'error',
+    rows: [],
+    error: message,
+    errorStatus: status,
+  }),
+  cardClassName: styles.kimiCard,
+  controlsClassName: styles.kimiControls,
+  controlClassName: styles.kimiControl,
+  gridClassName: styles.kimiGrid,
+  renderQuotaItems: renderWindsurfItems,
 };

@@ -562,6 +562,7 @@
     "filter_aistudio": "AIStudio",
     "filter_claude": "Claude",
     "filter_codex": "Codex",
+    "filter_windsurf": "Windsurf",
     "filter_antigravity": "Antigravity",
     "filter_iflow": "iFlow",
     "filter_vertex": "Vertex",
@@ -635,7 +636,10 @@
     "quota_refresh_single": "Обновить квоту",
     "quota_refresh_hint": "Обновить квоту только для этих учётных данных",
     "quota_refresh_success": "Квота для \"{{name}}\" обновлена",
-    "quota_refresh_failed": "Не удалось обновить квоту для \"{{name}}\": {{message}}"
+    "quota_refresh_failed": "Не удалось обновить квоту для \"{{name}}\": {{message}}",
+    "windsurf_quota_refresh_button": "Сбросить cooldown квоты Windsurf",
+    "windsurf_quota_refresh_success": "Windsurf quota state refreshed for \"{{name}}\"",
+    "windsurf_quota_refresh_failed": "Failed to refresh Windsurf quota state for \"{{name}}\""
   },
   "antigravity_quota": {
     "title": "Квота Antigravity",
@@ -740,6 +744,22 @@
     "limit_window": "Лимит {{duration}}",
     "limit_index": "Лимит #{{index}}",
     "reset_hint": "сброс через {{hint}}"
+  },
+  "windsurf_quota": {
+    "title": "Квота Windsurf",
+    "empty_title": "Файлы авторизации Windsurf отсутствуют",
+    "empty_desc": "Добавьте учётные данные Windsurf, чтобы увидеть оставшуюся квоту.",
+    "idle": "Нажмите здесь, чтобы обновить квоту",
+    "loading": "Загрузка квоты...",
+    "load_failed": "Не удалось загрузить квоту: {{message}}",
+    "empty_data": "Данные по квоте отсутствуют",
+    "refresh_button": "Обновить квоту",
+    "fetch_all": "Получить все",
+    "plan_label": "План",
+    "monthly_prompt": "Месячные prompt-кредиты",
+    "flex_credits": "Flex-кредиты",
+    "daily_remaining": "Остаток на день",
+    "weekly_remaining": "Остаток на неделю"
   },
   "vertex_import": {
     "title": "Вход с Vertex JSON",

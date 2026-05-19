@@ -562,6 +562,7 @@
     "filter_aistudio": "AIStudio",
     "filter_claude": "Claude",
     "filter_codex": "Codex",
+    "filter_windsurf": "Windsurf",
     "filter_antigravity": "Antigravity",
     "filter_iflow": "iFlow",
     "filter_vertex": "Vertex",
@@ -638,7 +639,10 @@
     "prefix_proxy_invalid_json": "该认证文件不是 JSON 对象，无法编辑字段。",
     "prefix_proxy_saved_success": "已更新认证文件 \"{{name}}\"",
     "quota_refresh_success": "已刷新 \"{{name}}\" 的额度",
-    "quota_refresh_failed": "刷新 \"{{name}}\" 的额度失败：{{message}}"
+    "quota_refresh_failed": "刷新 \"{{name}}\" 的额度失败：{{message}}",
+    "windsurf_quota_refresh_button": "清除 Windsurf 额度冷却",
+    "windsurf_quota_refresh_success": "已刷新 \"{{name}}\" 的 Windsurf 额度状态",
+    "windsurf_quota_refresh_failed": "刷新 \"{{name}}\" 的 Windsurf 额度状态失败"
   },
   "antigravity_quota": {
     "title": "Antigravity 额度",
@@ -743,6 +747,22 @@
     "limit_window": "{{duration}} 限额",
     "limit_index": "限额 #{{index}}",
     "reset_hint": "{{hint}} 后重置"
+  },
+  "windsurf_quota": {
+    "title": "Windsurf 额度",
+    "empty_title": "暂无 Windsurf 认证",
+    "empty_desc": "添加 Windsurf 认证文件后即可查看额度。",
+    "idle": "点击此处刷新额度",
+    "loading": "正在加载额度...",
+    "load_failed": "额度获取失败：{{message}}",
+    "empty_data": "暂无额度数据",
+    "refresh_button": "刷新额度",
+    "fetch_all": "获取全部",
+    "plan_label": "套餐",
+    "monthly_prompt": "Prompt 月额度",
+    "flex_credits": "Flex 积分",
+    "daily_remaining": "日额度剩余",
+    "weekly_remaining": "周额度剩余"
   },
   "vertex_import": {
     "title": "Vertex JSON 登录",

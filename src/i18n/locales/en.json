@@ -562,6 +562,7 @@
     "filter_aistudio": "AIStudio",
     "filter_claude": "Claude",
     "filter_codex": "Codex",
+    "filter_windsurf": "Windsurf",
     "filter_antigravity": "Antigravity",
     "filter_iflow": "iFlow",
     "filter_vertex": "Vertex",
@@ -638,7 +639,10 @@
     "prefix_proxy_invalid_json": "This auth file is not a JSON object, so fields cannot be edited.",
     "prefix_proxy_saved_success": "Updated auth file \"{{name}}\" successfully",
     "quota_refresh_success": "Quota refreshed for \"{{name}}\"",
-    "quota_refresh_failed": "Failed to refresh quota for \"{{name}}\": {{message}}"
+    "quota_refresh_failed": "Failed to refresh quota for \"{{name}}\": {{message}}",
+    "windsurf_quota_refresh_button": "Clear Windsurf quota cooldown",
+    "windsurf_quota_refresh_success": "Windsurf quota state refreshed for \"{{name}}\"",
+    "windsurf_quota_refresh_failed": "Failed to refresh Windsurf quota state for \"{{name}}\""
   },
   "antigravity_quota": {
     "title": "Antigravity Quota",
@@ -743,6 +747,22 @@
     "limit_window": "{{duration}} limit",
     "limit_index": "Limit #{{index}}",
     "reset_hint": "resets in {{hint}}"
+  },
+  "windsurf_quota": {
+    "title": "Windsurf Quota",
+    "empty_title": "No Windsurf Auth Files",
+    "empty_desc": "Add a Windsurf credential to view remaining quota.",
+    "idle": "Click here to refresh quota",
+    "loading": "Loading quota...",
+    "load_failed": "Failed to load quota: {{message}}",
+    "empty_data": "No quota data available",
+    "refresh_button": "Refresh Quota",
+    "fetch_all": "Fetch All",
+    "plan_label": "Plan",
+    "monthly_prompt": "Monthly prompt credits",
+    "flex_credits": "Flex credits",
+    "daily_remaining": "Daily remaining",
+    "weekly_remaining": "Weekly remaining"
   },
   "vertex_import": {
     "title": "Vertex JSON Login",

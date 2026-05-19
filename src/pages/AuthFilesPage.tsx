@@ -115,6 +115,7 @@ export function AuthFilesPage() {
     deleting,
     deletingAll,
     statusUpdating,
+    quotaRefreshing,
     batchStatusUpdating,
     fileInputRef,
     loadFiles,
@@ -123,6 +124,7 @@ export function AuthFilesPage() {
     handleDelete,
     handleDeleteAll,
     handleDownload,
+    handleQuotaRefresh,
     handleStatusToggle,
     toggleSelect,
     selectAllVisible,
@@ -824,12 +826,14 @@ export function AuthFilesPage() {
                     resolvedTheme={resolvedTheme}
                     disableControls={disableControls}
                     deleting={deleting}
-                    statusUpdating={statusUpdating}
-                    quotaFilterType={quotaFilterType}
-                    statusBarCache={statusBarCache}
-                    onShowModels={showModels}
-                    onDownload={handleDownload}
-                    onOpenPrefixProxyEditor={openPrefixProxyEditor}
+                      statusUpdating={statusUpdating}
+                      quotaRefreshing={quotaRefreshing}
+                      quotaFilterType={quotaFilterType}
+                      statusBarCache={statusBarCache}
+                      onShowModels={showModels}
+                      onDownload={handleDownload}
+                      onQuotaRefresh={handleQuotaRefresh}
+                      onOpenPrefixProxyEditor={openPrefixProxyEditor}
                     onDelete={handleDelete}
                     onToggleStatus={handleStatusToggle}
                     onToggleSelect={toggleSelect}

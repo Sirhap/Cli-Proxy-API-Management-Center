@@ -18,7 +18,8 @@ export type OAuthPlusProvider =
   | 'kiro-google'
   | 'kiro-github'
   | 'github'
-  | 'gitlab';
+  | 'gitlab'
+  | 'windsurf';
 
 export interface OAuthPlusStartResponse {
   url?: string;
@@ -70,6 +71,30 @@ export interface KiroImportResponse {
   label?: string;
 }
 
+export interface WindsurfLoginPayload {
+  email: string;
+  password: string;
+  proxy_url?: string;
+  ls_binary_path?: string;
+  ls_data_dir?: string;
+  workspace_dir?: string;
+  api_server_url?: string;
+  transport?: string;
+  ls_max_instances?: number;
+  priority?: number;
+  excluded_models?: string[];
+}
+
+export interface WindsurfLoginResponse {
+  status: 'ok';
+  provider?: string;
+  path?: string;
+  email?: string;
+  name?: string;
+  auth_method?: string;
+  api_key_masked?: string;
+}
+
 const CALLBACK_PROVIDER_MAP: Partial<Record<OAuthPlusProvider, string>> = {
   'kiro-aws-authcode': 'kiro',
   'kiro-idc': 'kiro',
@@ -91,7 +116,8 @@ const ROUTE_PROVIDER_MAP: Record<OAuthPlusProvider, string> = {
   'kiro-google': 'kiro',
   'kiro-github': 'kiro',
   github: 'github',
-  gitlab: 'gitlab'
+  gitlab: 'gitlab',
+  windsurf: 'windsurf'
 };
 
 export const oauthPlusApi = {
@@ -144,6 +170,9 @@ export const oauthPlusApi = {
       base_url: payload.baseUrl,
       personal_access_token: payload.personalAccessToken
     }),
+
+  submitWindsurfLogin: (payload: WindsurfLoginPayload) =>
+    apiClient.post<WindsurfLoginResponse>('/windsurf-login', payload),
 
   importKiroToken: () => apiClient.post<KiroImportResponse>('/kiro-import')
 };

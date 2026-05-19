@@ -306,3 +306,38 @@ export interface KimiQuotaState {
   error?: string;
   errorStatus?: number;
 }
+
+export interface WindsurfQuotaPayload {
+  plan_name?: string;
+  email?: string;
+  monthly_prompt_credits?: number;
+  monthly_flow_credits?: number;
+  available_prompt_credits?: number;
+  used_prompt_credits?: number;
+  available_flex_credits?: number;
+  daily_quota_remaining_percent?: number;
+  weekly_quota_remaining_percent?: number;
+  daily_quota_reset_at_unix?: string;
+  weekly_quota_reset_at_unix?: string;
+  billing_strategy?: string;
+  teams_tier?: string;
+}
+
+export interface WindsurfQuotaRow {
+  id: string;
+  labelKey: string;
+  used: number | null;
+  limit: number | null;
+  remainingPercent: number | null;
+  amountLabel?: string;
+  resetHint?: string;
+}
+
+export interface WindsurfQuotaState {
+  status: 'idle' | 'loading' | 'success' | 'error';
+  rows: WindsurfQuotaRow[];
+  planName?: string | null;
+  email?: string | null;
+  error?: string;
+  errorStatus?: number;
+}

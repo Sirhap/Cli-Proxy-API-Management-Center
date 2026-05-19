@@ -22,7 +22,7 @@ export type AuthFileModelItem = {
 };
 export type AuthFileIconAsset = string | { light: string; dark: string };
 
-export type QuotaProviderType = 'antigravity' | 'claude' | 'codex' | 'gemini-cli' | 'kimi';
+export type QuotaProviderType = 'antigravity' | 'claude' | 'codex' | 'gemini-cli' | 'kimi' | 'windsurf';
 
 export const QUOTA_PROVIDER_TYPES = new Set<QuotaProviderType>([
   'antigravity',
@@ -30,6 +30,7 @@ export const QUOTA_PROVIDER_TYPES = new Set<QuotaProviderType>([
   'codex',
   'gemini-cli',
   'kimi',
+  'windsurf',
 ]);
 
 export const MIN_CARD_PAGE_SIZE = 3;
@@ -76,6 +77,10 @@ export const TYPE_COLORS: Record<string, TypeColorSet> = {
   codex: {
     light: { bg: '#eae7ff', text: '#3538d4' },
     dark: { bg: '#262395', text: '#b5b0ff' },
+  },
+  windsurf: {
+    light: { bg: '#dff6f1', text: '#0f766e' },
+    dark: { bg: '#134e4a', text: '#7dd3c7' },
   },
   // Antigravity logo: 多色（主色 #3789F9 蓝 + #53A89A 青绿），用青色区分
   antigravity: {

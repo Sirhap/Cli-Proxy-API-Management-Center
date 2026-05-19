@@ -32,6 +32,7 @@ export type UseAuthFilesDataResult = {
   deleting: string | null;
   deletingAll: boolean;
   statusUpdating: Record<string, boolean>;
+  quotaRefreshing: Record<string, boolean>;
   batchStatusUpdating: boolean;
   fileInputRef: RefObject<HTMLInputElement | null>;
   loadFiles: () => Promise<void>;
@@ -40,6 +41,7 @@ export type UseAuthFilesDataResult = {
   handleDelete: (name: string) => void;
   handleDeleteAll: (options: DeleteAllOptions) => void;
   handleDownload: (name: string) => Promise<void>;
+  handleQuotaRefresh: (name: string) => Promise<void>;
   handleStatusToggle: (item: AuthFileItem, enabled: boolean) => Promise<void>;
   toggleSelect: (name: string) => void;
   selectAllVisible: (visibleFiles: AuthFileItem[]) => void;
@@ -61,6 +63,7 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [deletingAll, setDeletingAll] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState<Record<string, boolean>>({});
+  const [quotaRefreshing, setQuotaRefreshing] = useState<Record<string, boolean>>({});
   const [batchStatusUpdating, setBatchStatusUpdating] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
 
@@ -459,6 +462,32 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
     [showNotification, t]
   );
 
+  const handleQuotaRefresh = useCallback(
+    async (name: string) => {
+      if (!name || quotaRefreshing[name]) return;
+      setQuotaRefreshing((prev) => ({ ...prev, [name]: true }));
+      try {
+        await authFilesApi.refreshQuota(name);
+        showNotification(t('auth_files.windsurf_quota_refresh_success', { name }), 'success');
+        await loadFiles();
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : '';
+        showNotification(
+          `${t('auth_files.windsurf_quota_refresh_failed', { name })}${errorMessage ? `: ${errorMessage}` : ''}`,
+          'error'
+        );
+      } finally {
+        setQuotaRefreshing((prev) => {
+          if (!prev[name]) return prev;
+          const next = { ...prev };
+          delete next[name];
+          return next;
+        });
+      }
+    },
+    [loadFiles, quotaRefreshing, showNotification, t]
+  );
+
   const batchSetStatus = useCallback(
     async (names: string[], enabled: boolean) => {
       if (batchStatusPendingRef.current) return;
@@ -638,6 +667,7 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
     deleting,
     deletingAll,
     statusUpdating,
+    quotaRefreshing,
     batchStatusUpdating,
     fileInputRef,
     loadFiles,
@@ -646,6 +676,7 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
     handleDelete,
     handleDeleteAll,
     handleDownload,
+    handleQuotaRefresh,
     handleStatusToggle,
     toggleSelect,
     selectAllVisible,

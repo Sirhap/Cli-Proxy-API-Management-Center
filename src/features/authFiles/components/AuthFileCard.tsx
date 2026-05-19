@@ -7,6 +7,7 @@ import {
   IconDownload,
   IconInfo,
   IconModelCluster,
+  IconRefreshCw,
   IconSettings,
   IconTrash2,
 } from '@/components/ui/icons';
@@ -46,10 +47,12 @@ export type AuthFileCardProps = {
   disableControls: boolean;
   deleting: string | null;
   statusUpdating: Record<string, boolean>;
+  quotaRefreshing: Record<string, boolean>;
   quotaFilterType: QuotaProviderType | null;
   statusBarCache: Map<string, AuthFileStatusBarData>;
   onShowModels: (file: AuthFileItem) => void;
   onDownload: (name: string) => void;
+  onQuotaRefresh: (name: string) => void;
   onOpenPrefixProxyEditor: (file: AuthFileItem) => void;
   onDelete: (name: string) => void;
   onToggleStatus: (file: AuthFileItem, enabled: boolean) => void;
@@ -72,10 +75,12 @@ export function AuthFileCard(props: AuthFileCardProps) {
     disableControls,
     deleting,
     statusUpdating,
+    quotaRefreshing,
     quotaFilterType,
     statusBarCache,
     onShowModels,
     onDownload,
+    onQuotaRefresh,
     onOpenPrefixProxyEditor,
     onDelete,
     onToggleStatus,
@@ -89,6 +94,7 @@ export function AuthFileCard(props: AuthFileCardProps) {
   };
   const isRuntimeOnly = isRuntimeOnlyAuthFile(file);
   const isAistudio = (file.type || '').toLowerCase() === 'aistudio';
+  const isWindsurf = (file.type || '').toLowerCase() === 'windsurf';
   const showModelsButton = !isRuntimeOnly || isAistudio;
   const typeColor = getTypeColor(file.type || 'unknown', resolvedTheme);
   const typeLabel = getTypeLabel(t, file.type || 'unknown');
@@ -110,6 +116,8 @@ export function AuthFileCard(props: AuthFileCardProps) {
             ? styles.geminiCliCard
             : quotaType === 'kimi'
               ? styles.kimiCard
+              : quotaType === 'windsurf'
+                ? styles.kimiCard
               : '';
 
   const rawAuthIndex = file['auth_index'] ?? file.authIndex;
@@ -299,6 +307,22 @@ export function AuthFileCard(props: AuthFileCardProps) {
                   >
                     <IconSettings className={styles.actionIcon} size={16} />
                   </Button>
+                  {isWindsurf && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => onQuotaRefresh(file.name)}
+                      className={styles.iconButton}
+                      title={t('auth_files.windsurf_quota_refresh_button')}
+                      disabled={disableControls || quotaRefreshing[file.name] === true}
+                    >
+                      {quotaRefreshing[file.name] ? (
+                        <LoadingSpinner size={14} />
+                      ) : (
+                        <IconRefreshCw className={styles.actionIcon} size={16} />
+                      )}
+                    </Button>
+                  )}
                   <Button
                     variant="danger"
                     size="sm"

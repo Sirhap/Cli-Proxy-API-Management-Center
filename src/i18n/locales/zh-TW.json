@@ -562,6 +562,7 @@
     "filter_aistudio": "AIStudio",
     "filter_claude": "Claude",
     "filter_codex": "Codex",
+    "filter_windsurf": "Windsurf",
     "filter_antigravity": "Antigravity",
     "filter_iflow": "iFlow",
     "filter_vertex": "Vertex",
@@ -638,7 +639,10 @@
     "prefix_proxy_invalid_json": "該驗證檔案不是 JSON 物件，無法編輯欄位。",
     "prefix_proxy_saved_success": "已更新驗證檔案「{{name}}」",
     "quota_refresh_success": "已重新整理「{{name}}」的配額",
-    "quota_refresh_failed": "重新整理「{{name}}」的配額失敗：{{message}}"
+    "quota_refresh_failed": "重新整理「{{name}}」的配額失敗：{{message}}",
+    "windsurf_quota_refresh_button": "清除 Windsurf 配額冷卻",
+    "windsurf_quota_refresh_success": "已重新整理「{{name}}」的 Windsurf 配額狀態",
+    "windsurf_quota_refresh_failed": "重新整理「{{name}}」的 Windsurf 配額狀態失敗"
   },
   "antigravity_quota": {
     "title": "Antigravity 配額",
@@ -743,6 +747,22 @@
     "limit_window": "{{duration}} 限額",
     "limit_index": "限額 #{{index}}",
     "reset_hint": "{{hint}} 後重置"
+  },
+  "windsurf_quota": {
+    "title": "Windsurf 配額",
+    "empty_title": "暫無 Windsurf 驗證",
+    "empty_desc": "新增 Windsurf 驗證檔案後即可查看配額。",
+    "idle": "點擊此處重新整理配額",
+    "loading": "正在載入配額...",
+    "load_failed": "配額取得失敗：{{message}}",
+    "empty_data": "暫無配額資料",
+    "refresh_button": "重新整理配額",
+    "fetch_all": "取得全部",
+    "plan_label": "方案",
+    "monthly_prompt": "Prompt 月配額",
+    "flex_credits": "Flex 點數",
+    "daily_remaining": "日配額剩餘",
+    "weekly_remaining": "週配額剩餘"
   },
   "vertex_import": {
     "title": "Vertex JSON 登入",

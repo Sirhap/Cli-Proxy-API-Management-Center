@@ -10,7 +10,8 @@ import {
   type GitLabPatResponse,
   type IFlowCookieResponse,
   type KiroImportResponse,
-  type OAuthPlusProvider
+  type OAuthPlusProvider,
+  type WindsurfLoginResponse
 } from '@/services/api/oauthPlus';
 import { copyToClipboard } from '@/utils/clipboard';
 import styles from './OAuthPlusSection.module.scss';
@@ -56,6 +57,23 @@ interface KiroImportState {
   loading: boolean;
   error?: string;
   result?: KiroImportResponse;
+}
+
+interface WindsurfLoginState {
+  email: string;
+  password: string;
+  proxyUrl: string;
+  lsBinaryPath: string;
+  lsDataDir: string;
+  workspaceDir: string;
+  apiServerUrl: string;
+  transport: string;
+  lsMaxInstances: string;
+  priority: string;
+  excludedModels: string;
+  loading: boolean;
+  error?: string;
+  result?: WindsurfLoginResponse;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -112,9 +130,38 @@ const CALLBACK_SUPPORTED: OAuthPlusProvider[] = [
   'kiro-github'
 ];
 const SUCCESS_RESET_DELAY_MS = 5000;
+const DEFAULT_WINDSURF_LOGIN_STATE: WindsurfLoginState = {
+  email: '',
+  password: '',
+  proxyUrl: '',
+  lsBinaryPath: '',
+  lsDataDir: '',
+  workspaceDir: '',
+  apiServerUrl: '',
+  transport: 'native',
+  lsMaxInstances: '',
+  priority: '',
+  excludedModels: '',
+  loading: false
+};
 const getProviderI18nPrefix = (provider: OAuthPlusProvider) => provider.replace(/-/g, '_');
 const getAuthKey = (provider: OAuthPlusProvider, suffix: string) =>
   `auth_login.${getProviderI18nPrefix(provider)}_${suffix}`;
+
+const parseOptionalNumber = (value: string): number | undefined => {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  const parsed = Number(trimmed);
+  return Number.isFinite(parsed) ? parsed : undefined;
+};
+
+const parseExcludedModels = (value: string): string[] | undefined => {
+  const items = value
+    .split(/[\n,]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+  return items.length ? items : undefined;
+};
 
 export function OAuthPlusSection() {
   const { t } = useTranslation();
@@ -124,6 +171,7 @@ export function OAuthPlusSection() {
   const [iflowCookieState, setIflowCookieState] = useState<IFlowCookieState>({ cookie: '', loading: false });
   const [gitlabPatState, setGitlabPatState] = useState<GitLabPatState>({ baseUrl: '', token: '', loading: false });
   const [kiroImportState, setKiroImportState] = useState<KiroImportState>({ loading: false });
+  const [windsurfState, setWindsurfState] = useState<WindsurfLoginState>(DEFAULT_WINDSURF_LOGIN_STATE);
   const pollingTimers = useRef<Partial<Record<OAuthPlusProvider, number>>>({});
   const successResetTimers = useRef<Partial<Record<OAuthPlusProvider, number>>>({});
 
@@ -363,6 +411,40 @@ export function OAuthPlusSection() {
     }
   };
 
+  const updateWindsurfState = (next: Partial<WindsurfLoginState>) => {
+    setWindsurfState((prev) => ({ ...prev, ...next }));
+  };
+
+  const submitWindsurfLogin = async () => {
+    const email = windsurfState.email.trim();
+    if (!email || !windsurfState.password) {
+      showNotification(t('auth_login.windsurf_required'), 'warning');
+      return;
+    }
+    updateWindsurfState({ loading: true, error: undefined, result: undefined });
+    try {
+      const result = await oauthPlusApi.submitWindsurfLogin({
+        email,
+        password: windsurfState.password,
+        proxy_url: windsurfState.proxyUrl.trim() || undefined,
+        ls_binary_path: windsurfState.lsBinaryPath.trim() || undefined,
+        ls_data_dir: windsurfState.lsDataDir.trim() || undefined,
+        workspace_dir: windsurfState.workspaceDir.trim() || undefined,
+        api_server_url: windsurfState.apiServerUrl.trim() || undefined,
+        transport: windsurfState.transport.trim() || undefined,
+        ls_max_instances: parseOptionalNumber(windsurfState.lsMaxInstances),
+        priority: parseOptionalNumber(windsurfState.priority),
+        excluded_models: parseExcludedModels(windsurfState.excludedModels)
+      });
+      updateWindsurfState({ loading: false, result, password: '' });
+      showNotification(t('auth_login.windsurf_status_success'), 'success');
+    } catch (err: unknown) {
+      const message = getErrorMessage(err);
+      updateWindsurfState({ loading: false, error: message });
+      showNotification(`${t('auth_login.windsurf_status_error')} ${message || ''}`.trim(), 'error');
+    }
+  };
+
   const renderProviderCard = (provider: OAuthProviderCard) => {
     const state = states[provider.id] || {};
     const canSubmitCallback = CALLBACK_SUPPORTED.includes(provider.id) && Boolean(state.url);
@@ -513,6 +595,36 @@ export function OAuthPlusSection() {
                 {gitlabPatState.result.username && <div className={styles.keyValueItem}><span className={styles.keyValueKey}>{t('auth_login.gitlab_pat_result_username')}</span><span className={styles.keyValueValue}>{gitlabPatState.result.username}</span></div>}
                 {gitlabPatState.result.email && <div className={styles.keyValueItem}><span className={styles.keyValueKey}>{t('auth_login.gitlab_pat_result_email')}</span><span className={styles.keyValueValue}>{gitlabPatState.result.email}</span></div>}
                 {gitlabPatState.result.saved_path && <div className={styles.keyValueItem}><span className={styles.keyValueKey}>{t('auth_login.gitlab_pat_result_path')}</span><span className={styles.keyValueValue}>{gitlabPatState.result.saved_path}</span></div>}
+              </div>
+            </div>
+          )}
+        </div>
+      </Card>
+
+      <Card title={t('auth_login.windsurf_title')} extra={<Button onClick={submitWindsurfLogin} loading={windsurfState.loading}>{t('auth_login.windsurf_button')}</Button>}>
+        <div className={styles.cardContent}>
+          <div className={styles.cardHint}>{t('auth_login.windsurf_hint')}</div>
+          <Input label={t('auth_login.windsurf_email_label')} value={windsurfState.email} onChange={(e) => updateWindsurfState({ email: e.target.value })} placeholder={t('auth_login.windsurf_email_placeholder')} autoComplete="username" />
+          <Input label={t('auth_login.windsurf_password_label')} value={windsurfState.password} onChange={(e) => updateWindsurfState({ password: e.target.value })} placeholder={t('auth_login.windsurf_password_placeholder')} type="password" autoComplete="current-password" />
+          <Input label={t('auth_login.windsurf_transport_label')} hint={t('auth_login.windsurf_transport_hint')} value={windsurfState.transport} onChange={(e) => updateWindsurfState({ transport: e.target.value })} placeholder={t('auth_login.windsurf_transport_placeholder')} />
+          <Input label={t('auth_login.windsurf_proxy_url_label')} hint={t('auth_login.windsurf_proxy_url_hint')} value={windsurfState.proxyUrl} onChange={(e) => updateWindsurfState({ proxyUrl: e.target.value })} placeholder={t('auth_login.windsurf_proxy_url_placeholder')} />
+          <Input label={t('auth_login.windsurf_ls_binary_path_label')} hint={t('auth_login.windsurf_ls_binary_path_hint')} value={windsurfState.lsBinaryPath} onChange={(e) => updateWindsurfState({ lsBinaryPath: e.target.value })} placeholder={t('auth_login.windsurf_ls_binary_path_placeholder')} />
+          <Input label={t('auth_login.windsurf_ls_data_dir_label')} hint={t('auth_login.windsurf_ls_data_dir_hint')} value={windsurfState.lsDataDir} onChange={(e) => updateWindsurfState({ lsDataDir: e.target.value })} placeholder={t('auth_login.windsurf_ls_data_dir_placeholder')} />
+          <Input label={t('auth_login.windsurf_workspace_dir_label')} hint={t('auth_login.windsurf_workspace_dir_hint')} value={windsurfState.workspaceDir} onChange={(e) => updateWindsurfState({ workspaceDir: e.target.value })} placeholder={t('auth_login.windsurf_workspace_dir_placeholder')} />
+          <Input label={t('auth_login.windsurf_api_server_url_label')} hint={t('auth_login.windsurf_api_server_url_hint')} value={windsurfState.apiServerUrl} onChange={(e) => updateWindsurfState({ apiServerUrl: e.target.value })} placeholder={t('auth_login.windsurf_api_server_url_placeholder')} />
+          <Input label={t('auth_login.windsurf_ls_max_instances_label')} hint={t('auth_login.windsurf_ls_max_instances_hint')} value={windsurfState.lsMaxInstances} onChange={(e) => updateWindsurfState({ lsMaxInstances: e.target.value })} placeholder={t('auth_login.windsurf_ls_max_instances_placeholder')} inputMode="numeric" />
+          <Input label={t('auth_login.windsurf_priority_label')} hint={t('auth_login.windsurf_priority_hint')} value={windsurfState.priority} onChange={(e) => updateWindsurfState({ priority: e.target.value })} placeholder={t('auth_login.windsurf_priority_placeholder')} inputMode="numeric" />
+          <Input label={t('auth_login.windsurf_excluded_models_label')} hint={t('auth_login.windsurf_excluded_models_hint')} value={windsurfState.excludedModels} onChange={(e) => updateWindsurfState({ excludedModels: e.target.value })} placeholder={t('auth_login.windsurf_excluded_models_placeholder')} />
+          {windsurfState.error && <div className="status-badge error">{t('auth_login.windsurf_status_error')} {windsurfState.error}</div>}
+          {windsurfState.result && (
+            <div className={styles.connectionBox}>
+              <div className={styles.connectionLabel}>{t('auth_login.windsurf_result_title')}</div>
+              <div className={styles.keyValueList}>
+                {windsurfState.result.email && <div className={styles.keyValueItem}><span className={styles.keyValueKey}>{t('auth_login.windsurf_result_email')}</span><span className={styles.keyValueValue}>{windsurfState.result.email}</span></div>}
+                {windsurfState.result.name && <div className={styles.keyValueItem}><span className={styles.keyValueKey}>{t('auth_login.windsurf_result_name')}</span><span className={styles.keyValueValue}>{windsurfState.result.name}</span></div>}
+                {windsurfState.result.auth_method && <div className={styles.keyValueItem}><span className={styles.keyValueKey}>{t('auth_login.windsurf_result_auth_method')}</span><span className={styles.keyValueValue}>{windsurfState.result.auth_method}</span></div>}
+                {windsurfState.result.api_key_masked && <div className={styles.keyValueItem}><span className={styles.keyValueKey}>{t('auth_login.windsurf_result_api_key')}</span><span className={styles.keyValueValue}>{windsurfState.result.api_key_masked}</span></div>}
+                {windsurfState.result.path && <div className={styles.keyValueItem}><span className={styles.keyValueKey}>{t('auth_login.windsurf_result_path')}</span><span className={styles.keyValueValue}>{windsurfState.result.path}</span></div>}
               </div>
             </div>
           )}
