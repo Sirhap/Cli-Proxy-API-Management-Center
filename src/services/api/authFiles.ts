@@ -4,7 +4,7 @@
 
 import { apiClient } from './client';
 import type { AuthFilesResponse } from '@/types/authFile';
-import type { OAuthModelAliasEntry, WindsurfQuotaPayload } from '@/types';
+import type { OAuthModelAliasEntry, ProviderQuotaPayload, WindsurfQuotaPayload } from '@/types';
 import { parseTimestampMs } from '@/utils/timestamp';
 
 type StatusError = { status?: number };
@@ -428,6 +428,9 @@ export const authFilesApi = {
     const response = await apiClient.post<WindsurfQuotaResponse>('/auth-files/windsurf-quota', { name });
     return response.quota ?? {};
   },
+
+  getProviderQuota: (name: string, provider?: string): Promise<ProviderQuotaPayload> =>
+    apiClient.post<ProviderQuotaPayload>('/auth-files/quota-query', { name, provider }),
 
   uploadFiles: async (files: File[]): Promise<AuthFileBatchUploadResult> => {
     const requestedNames = files.map((file) => file.name);

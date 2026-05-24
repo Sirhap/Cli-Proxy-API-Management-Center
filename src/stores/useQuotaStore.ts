@@ -3,7 +3,7 @@
  */
 
 import { create } from 'zustand';
-import type { AntigravityQuotaState, ClaudeQuotaState, CodexQuotaState, GeminiCliQuotaState, KimiQuotaState, WindsurfQuotaState } from '@/types';
+import type { AntigravityQuotaState, ClaudeQuotaState, CodexQuotaState, GeminiCliQuotaState, KimiQuotaState, ProviderQuotaState, WindsurfQuotaState } from '@/types';
 
 type QuotaUpdater<T> = T | ((prev: T) => T);
 
@@ -14,12 +14,14 @@ interface QuotaStoreState {
   geminiCliQuota: Record<string, GeminiCliQuotaState>;
   kimiQuota: Record<string, KimiQuotaState>;
   windsurfQuota: Record<string, WindsurfQuotaState>;
+  providerQuota: Record<string, ProviderQuotaState>;
   setAntigravityQuota: (updater: QuotaUpdater<Record<string, AntigravityQuotaState>>) => void;
   setClaudeQuota: (updater: QuotaUpdater<Record<string, ClaudeQuotaState>>) => void;
   setCodexQuota: (updater: QuotaUpdater<Record<string, CodexQuotaState>>) => void;
   setGeminiCliQuota: (updater: QuotaUpdater<Record<string, GeminiCliQuotaState>>) => void;
   setKimiQuota: (updater: QuotaUpdater<Record<string, KimiQuotaState>>) => void;
   setWindsurfQuota: (updater: QuotaUpdater<Record<string, WindsurfQuotaState>>) => void;
+  setProviderQuota: (updater: QuotaUpdater<Record<string, ProviderQuotaState>>) => void;
   clearQuotaCache: () => void;
 }
 
@@ -37,6 +39,7 @@ export const useQuotaStore = create<QuotaStoreState>((set) => ({
   geminiCliQuota: {},
   kimiQuota: {},
   windsurfQuota: {},
+  providerQuota: {},
   setAntigravityQuota: (updater) =>
     set((state) => ({
       antigravityQuota: resolveUpdater(updater, state.antigravityQuota)
@@ -61,6 +64,10 @@ export const useQuotaStore = create<QuotaStoreState>((set) => ({
     set((state) => ({
       windsurfQuota: resolveUpdater(updater, state.windsurfQuota)
     })),
+  setProviderQuota: (updater) =>
+    set((state) => ({
+      providerQuota: resolveUpdater(updater, state.providerQuota)
+    })),
   clearQuotaCache: () =>
     set({
       antigravityQuota: {},
@@ -68,6 +75,7 @@ export const useQuotaStore = create<QuotaStoreState>((set) => ({
       codexQuota: {},
       geminiCliQuota: {},
       kimiQuota: {},
-      windsurfQuota: {}
+      windsurfQuota: {},
+      providerQuota: {}
     })
 }));

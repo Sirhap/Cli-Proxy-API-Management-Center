@@ -28,6 +28,9 @@ import type {
   GeminiCliUserTier,
   KimiQuotaRow,
   KimiQuotaState,
+  ProviderQuotaMetric,
+  ProviderQuotaPayload,
+  ProviderQuotaState,
   WindsurfQuotaPayload,
   WindsurfQuotaRow,
   WindsurfQuotaState,
@@ -76,8 +79,10 @@ import {
   isDisabledAuthFile,
   isGeminiCliFile,
   isKimiFile,
+  isProviderQuotaFile,
   isRuntimeOnlyAuthFile,
   isWindsurfFile,
+  resolveAuthProvider,
 } from '@/utils/quota';
 import { normalizeAuthIndex } from '@/utils/authIndex';
 import type { QuotaRenderHelpers } from './QuotaCard';
@@ -85,7 +90,14 @@ import styles from '@/pages/QuotaPage.module.scss';
 
 type QuotaUpdater<T> = T | ((prev: T) => T);
 
-type QuotaType = 'antigravity' | 'claude' | 'codex' | 'gemini-cli' | 'kimi' | 'windsurf';
+type QuotaType =
+  | 'antigravity'
+  | 'claude'
+  | 'codex'
+  | 'gemini-cli'
+  | 'kimi'
+  | 'windsurf'
+  | 'provider-quota';
 
 const DEFAULT_ANTIGRAVITY_PROJECT_ID = 'bamboo-precept-lgxtn';
 const QUOTA_PROGRESS_HIGH_THRESHOLD = 70;
@@ -103,12 +115,14 @@ export interface QuotaStore {
   geminiCliQuota: Record<string, GeminiCliQuotaState>;
   kimiQuota: Record<string, KimiQuotaState>;
   windsurfQuota: Record<string, WindsurfQuotaState>;
+  providerQuota: Record<string, ProviderQuotaState>;
   setAntigravityQuota: (updater: QuotaUpdater<Record<string, AntigravityQuotaState>>) => void;
   setClaudeQuota: (updater: QuotaUpdater<Record<string, ClaudeQuotaState>>) => void;
   setCodexQuota: (updater: QuotaUpdater<Record<string, CodexQuotaState>>) => void;
   setGeminiCliQuota: (updater: QuotaUpdater<Record<string, GeminiCliQuotaState>>) => void;
   setKimiQuota: (updater: QuotaUpdater<Record<string, KimiQuotaState>>) => void;
   setWindsurfQuota: (updater: QuotaUpdater<Record<string, WindsurfQuotaState>>) => void;
+  setProviderQuota: (updater: QuotaUpdater<Record<string, ProviderQuotaState>>) => void;
   clearQuotaCache: () => void;
 }
 
@@ -1522,4 +1536,131 @@ export const WINDSURF_CONFIG: QuotaConfig<WindsurfQuotaState, WindsurfQuotaPaylo
   controlClassName: styles.kimiControl,
   gridClassName: styles.kimiGrid,
   renderQuotaItems: renderWindsurfItems,
+};
+
+const fetchProviderQuota = async (file: AuthFileItem): Promise<ProviderQuotaPayload> =>
+  authFilesApi.getProviderQuota(file.name, resolveAuthProvider(file));
+
+const metricValueLabel = (value: number | undefined, unit?: string): string => {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return '--';
+  const rounded = Number.isInteger(value) ? value.toString() : value.toFixed(2);
+  return unit ? `${rounded} ${unit}` : rounded;
+};
+
+const metricRemainingPercent = (metric: ProviderQuotaMetric): number | null => {
+  const explicit = normalizeNumberValue(metric.remaining_percent);
+  if (explicit !== null) return Math.max(0, Math.min(100, explicit));
+  const remaining = normalizeNumberValue(metric.remaining);
+  const limit = normalizeNumberValue(metric.limit);
+  if (remaining !== null && limit !== null && limit > 0) {
+    return Math.max(0, Math.min(100, (remaining / limit) * 100));
+  }
+  return null;
+};
+
+const renderProviderQuotaItems = (
+  quota: ProviderQuotaState,
+  t: TFunction,
+  helpers: QuotaRenderHelpers
+): ReactNode => {
+  const { styles: styleMap, QuotaProgressBar } = helpers;
+  const { createElement: h, Fragment } = React;
+  const payload = quota.payload;
+  if (!payload) {
+    return h('div', { className: styleMap.quotaMessage }, t('provider_quota.empty_data'));
+  }
+  if (payload.status === 'unsupported' || payload.raw_supported === false) {
+    return h(
+      'div',
+      { className: styleMap.quotaError },
+      payload.unavailable_reason || t('provider_quota.unsupported')
+    );
+  }
+
+  const nodes: ReactNode[] = [];
+  if (payload.plan || payload.account || payload.source) {
+    nodes.push(
+      h(
+        'div',
+        { key: 'meta', className: styleMap.codexPlan },
+        h('span', { className: styleMap.codexPlanLabel }, t('provider_quota.source_label')),
+        h(
+          'span',
+          { className: styleMap.codexPlanValue },
+          [payload.plan, payload.account, payload.source].filter(Boolean).join(' · ')
+        )
+      )
+    );
+  }
+
+  const metrics = payload.metrics ?? [];
+  if (metrics.length === 0) {
+    nodes.push(h('div', { key: 'empty', className: styleMap.quotaMessage }, t('provider_quota.empty_data')));
+    return h(Fragment, null, ...nodes);
+  }
+
+  nodes.push(
+    ...metrics.map((metric) => {
+      const remainingPercent = metricRemainingPercent(metric);
+      const percentLabel = remainingPercent === null ? '--' : `${Math.round(remainingPercent)}%`;
+      const used = normalizeNumberValue(metric.used);
+      const limit = normalizeNumberValue(metric.limit);
+      const remaining = normalizeNumberValue(metric.remaining);
+      const amountLabel =
+        used !== null && limit !== null
+          ? `${metricValueLabel(used)} / ${metricValueLabel(limit, metric.unit)}`
+          : remaining !== null
+            ? `${t('provider_quota.remaining_label')} ${metricValueLabel(remaining, metric.unit)}`
+            : used !== null
+              ? metricValueLabel(used, metric.unit)
+              : '';
+      const resetLabel = metric.reset_at ? formatQuotaResetTime(metric.reset_at) : '';
+
+      return h(
+        'div',
+        { key: metric.id, className: styleMap.quotaRow },
+        h(
+          'div',
+          { className: styleMap.quotaRowHeader },
+          h('span', { className: styleMap.quotaModel }, metric.label || metric.id),
+          h(
+            'div',
+            { className: styleMap.quotaMeta },
+            h('span', { className: styleMap.quotaPercent }, percentLabel),
+            amountLabel ? h('span', { className: styleMap.quotaAmount }, amountLabel) : null,
+            resetLabel ? h('span', { className: styleMap.quotaReset }, resetLabel) : null
+          )
+        ),
+        h(QuotaProgressBar, {
+          percent: remainingPercent,
+          highThreshold: QUOTA_PROGRESS_HIGH_THRESHOLD,
+          mediumThreshold: QUOTA_PROGRESS_MEDIUM_THRESHOLD,
+        })
+      );
+    })
+  );
+
+  return h(Fragment, null, ...nodes);
+};
+
+export const PROVIDER_QUOTA_CONFIG: QuotaConfig<ProviderQuotaState, ProviderQuotaPayload> = {
+  type: 'provider-quota',
+  i18nPrefix: 'provider_quota',
+  cardIdleMessageKey: 'quota_management.card_idle_hint',
+  filterFn: (file) => isProviderQuotaFile(file) && !isRuntimeOnlyAuthFile(file) && !isDisabledAuthFile(file),
+  fetchQuota: fetchProviderQuota,
+  storeSelector: (state) => state.providerQuota,
+  storeSetter: 'setProviderQuota',
+  buildLoadingState: () => ({ status: 'loading' }),
+  buildSuccessState: (payload) => ({ status: 'success', payload }),
+  buildErrorState: (message, status) => ({
+    status: 'error',
+    error: message,
+    errorStatus: status,
+  }),
+  cardClassName: styles.kimiCard,
+  controlsClassName: styles.kimiControls,
+  controlClassName: styles.kimiControl,
+  gridClassName: styles.kimiGrid,
+  renderQuotaItems: renderProviderQuotaItems,
 };

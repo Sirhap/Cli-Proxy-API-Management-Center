@@ -341,3 +341,34 @@ export interface WindsurfQuotaState {
   error?: string;
   errorStatus?: number;
 }
+
+export interface ProviderQuotaMetric {
+  id: string;
+  label?: string;
+  used?: number;
+  limit?: number;
+  remaining?: number;
+  remaining_percent?: number;
+  reset_at?: string;
+  unit?: string;
+}
+
+export interface ProviderQuotaPayload {
+  status: 'success' | 'unsupported';
+  provider: string;
+  source?: string;
+  metrics?: ProviderQuotaMetric[];
+  reset_at?: string;
+  raw_supported: boolean;
+  unavailable_reason?: string;
+  plan?: string;
+  account?: string;
+  documentation_source?: string;
+}
+
+export interface ProviderQuotaState {
+  status: 'idle' | 'loading' | 'success' | 'error';
+  payload?: ProviderQuotaPayload;
+  error?: string;
+  errorStatus?: number;
+}

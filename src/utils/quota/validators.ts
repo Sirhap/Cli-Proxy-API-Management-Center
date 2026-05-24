@@ -47,6 +47,23 @@ export function isWindsurfFile(file: AuthFileItem): boolean {
   return resolveAuthProvider(file) === 'windsurf';
 }
 
+export function isProviderQuotaFile(file: AuthFileItem): boolean {
+  return [
+    'github-copilot',
+    'kiro',
+    'vertex',
+    'openai',
+    'openai-compatibility',
+    'gemini',
+    'aistudio',
+    'codebuddy',
+    'cursor',
+    'kilo',
+    'gitlab',
+    'xai',
+  ].includes(resolveAuthProvider(file));
+}
+
 export function isRuntimeOnlyAuthFile(file: AuthFileItem): boolean {
   const raw = file['runtime_only'] ?? file.runtimeOnly;
   if (typeof raw === 'boolean') return raw;

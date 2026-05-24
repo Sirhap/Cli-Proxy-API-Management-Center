@@ -22,7 +22,25 @@ export type AuthFileModelItem = {
 };
 export type AuthFileIconAsset = string | { light: string; dark: string };
 
-export type QuotaProviderType = 'antigravity' | 'claude' | 'codex' | 'gemini-cli' | 'kimi' | 'windsurf';
+export type QuotaProviderType =
+  | 'antigravity'
+  | 'claude'
+  | 'codex'
+  | 'gemini-cli'
+  | 'kimi'
+  | 'windsurf'
+  | 'github-copilot'
+  | 'kiro'
+  | 'vertex'
+  | 'openai'
+  | 'openai-compatibility'
+  | 'gemini'
+  | 'aistudio'
+  | 'codebuddy'
+  | 'cursor'
+  | 'kilo'
+  | 'gitlab'
+  | 'xai';
 
 export const QUOTA_PROVIDER_TYPES = new Set<QuotaProviderType>([
   'antigravity',
@@ -31,6 +49,18 @@ export const QUOTA_PROVIDER_TYPES = new Set<QuotaProviderType>([
   'gemini-cli',
   'kimi',
   'windsurf',
+  'github-copilot',
+  'kiro',
+  'vertex',
+  'openai',
+  'openai-compatibility',
+  'gemini',
+  'aistudio',
+  'codebuddy',
+  'cursor',
+  'kilo',
+  'gitlab',
+  'xai',
 ]);
 
 export const MIN_CARD_PAGE_SIZE = 3;
@@ -81,6 +111,42 @@ export const TYPE_COLORS: Record<string, TypeColorSet> = {
   windsurf: {
     light: { bg: '#dff6f1', text: '#0f766e' },
     dark: { bg: '#134e4a', text: '#7dd3c7' },
+  },
+  'github-copilot': {
+    light: { bg: '#e8f5e9', text: '#1b5e20' },
+    dark: { bg: '#1b4332', text: '#9be7b4' },
+  },
+  kiro: {
+    light: { bg: '#fff3dc', text: '#8a4b00' },
+    dark: { bg: '#4a2f09', text: '#ffd58a' },
+  },
+  openai: {
+    light: { bg: '#e6f4ef', text: '#116149' },
+    dark: { bg: '#123d32', text: '#93d5bf' },
+  },
+  'openai-compatibility': {
+    light: { bg: '#eef1f5', text: '#435061' },
+    dark: { bg: '#313943', text: '#c7d1dc' },
+  },
+  codebuddy: {
+    light: { bg: '#e6f0ff', text: '#2455a6' },
+    dark: { bg: '#1f345f', text: '#a8c8ff' },
+  },
+  cursor: {
+    light: { bg: '#f1f2f4', text: '#20242a' },
+    dark: { bg: '#303236', text: '#d8dce2' },
+  },
+  kilo: {
+    light: { bg: '#fff0f2', text: '#9f1239' },
+    dark: { bg: '#551827', text: '#ffb4c1' },
+  },
+  gitlab: {
+    light: { bg: '#fff1e8', text: '#9a3412' },
+    dark: { bg: '#51210f', text: '#ffbd8a' },
+  },
+  xai: {
+    light: { bg: '#eceff3', text: '#26313d' },
+    dark: { bg: '#252b33', text: '#c8d0da' },
   },
   // Antigravity logo: 多色（主色 #3789F9 蓝 + #53A89A 青绿），用青色区分
   antigravity: {

@@ -7,6 +7,7 @@ import {
   CODEX_CONFIG,
   GEMINI_CLI_CONFIG,
   KIMI_CONFIG,
+  PROVIDER_QUOTA_CONFIG,
   WINDSURF_CONFIG
 } from '@/components/quota';
 import { useNotificationStore, useQuotaStore } from '@/stores';
@@ -28,6 +29,7 @@ const getQuotaConfig = (type: QuotaProviderType) => {
   if (type === 'codex') return CODEX_CONFIG;
   if (type === 'kimi') return KIMI_CONFIG;
   if (type === 'windsurf') return WINDSURF_CONFIG;
+  if (type !== 'gemini-cli') return PROVIDER_QUOTA_CONFIG;
   return GEMINI_CLI_CONFIG;
 };
 
@@ -48,6 +50,7 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
     if (quotaType === 'codex') return state.codexQuota[file.name] as QuotaState;
     if (quotaType === 'kimi') return state.kimiQuota[file.name] as QuotaState;
     if (quotaType === 'windsurf') return state.windsurfQuota[file.name] as QuotaState;
+    if (quotaType !== 'gemini-cli') return state.providerQuota[file.name] as QuotaState;
     return state.geminiCliQuota[file.name] as QuotaState;
   });
 
@@ -57,6 +60,7 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
     if (quotaType === 'codex') return state.setCodexQuota as unknown as (updater: unknown) => void;
     if (quotaType === 'kimi') return state.setKimiQuota as unknown as (updater: unknown) => void;
     if (quotaType === 'windsurf') return state.setWindsurfQuota as unknown as (updater: unknown) => void;
+    if (quotaType !== 'gemini-cli') return state.setProviderQuota as unknown as (updater: unknown) => void;
     return state.setGeminiCliQuota as unknown as (updater: unknown) => void;
   });
 
