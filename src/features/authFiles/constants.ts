@@ -3,12 +3,16 @@ import iconAntigravity from '@/assets/icons/antigravity.svg';
 import iconClaude from '@/assets/icons/claude.svg';
 import iconCodex from '@/assets/icons/codex.svg';
 import iconGemini from '@/assets/icons/gemini.svg';
+import iconGrok from '@/assets/icons/grok.svg';
+import iconGrokDark from '@/assets/icons/grok-dark.svg';
 import iconIflow from '@/assets/icons/iflow.svg';
 import iconKimiDark from '@/assets/icons/kimi-dark.svg';
 import iconKimiLight from '@/assets/icons/kimi-light.svg';
+import iconQoder from '@/assets/icons/qoder.svg';
 import iconQwen from '@/assets/icons/qwen.svg';
 import iconVertex from '@/assets/icons/vertex.svg';
 import type { AuthFileItem } from '@/types';
+import { normalizeOAuthProviderKey } from '@/utils/providerKeys';
 import { parseTimestamp } from '@/utils/timestamp';
 
 export type ThemeColors = { bg: string; text: string; border?: string };
@@ -28,6 +32,7 @@ export type QuotaProviderType =
   | 'codex'
   | 'gemini-cli'
   | 'kimi'
+  | 'qoder'
   | 'windsurf'
   | 'github-copilot'
   | 'kiro'
@@ -46,8 +51,8 @@ export const QUOTA_PROVIDER_TYPES = new Set<QuotaProviderType>([
   'antigravity',
   'claude',
   'codex',
-  'gemini-cli',
   'kimi',
+  'qoder',
   'windsurf',
   'github-copilot',
   'kiro',
@@ -62,6 +67,18 @@ export const QUOTA_PROVIDER_TYPES = new Set<QuotaProviderType>([
   'gitlab',
   'xai',
 ]);
+
+export const OAUTH_PROVIDER_PRESETS = [
+  'vertex',
+  'aistudio',
+  'antigravity',
+  'xai',
+  'claude',
+  'codex',
+  'kimi',
+];
+
+const OAUTH_PROVIDER_EXCLUDES = new Set(['all', 'unknown', 'empty']);
 
 export const MIN_CARD_PAGE_SIZE = 3;
 export const MAX_CARD_PAGE_SIZE = 30;
@@ -87,11 +104,6 @@ export const TYPE_COLORS: Record<string, TypeColorSet> = {
   gemini: {
     light: { bg: '#e3f2fd', text: '#1565c0' },
     dark: { bg: '#0d47a1', text: '#64b5f6' },
-  },
-  // Gemini-CLI: 同 Gemini 图标，用更深的海军蓝区分
-  'gemini-cli': {
-    light: { bg: '#e0e8ff', text: '#1e4fa3' },
-    dark: { bg: '#1c3f73', text: '#a8c7ff' },
   },
   // AI Studio: 使用 Gemini 图标，中性灰标签
   aistudio: {
@@ -144,14 +156,20 @@ export const TYPE_COLORS: Record<string, TypeColorSet> = {
     light: { bg: '#fff1e8', text: '#9a3412' },
     dark: { bg: '#51210f', text: '#ffbd8a' },
   },
-  xai: {
-    light: { bg: '#eceff3', text: '#26313d' },
-    dark: { bg: '#252b33', text: '#c8d0da' },
-  },
   // Antigravity logo: 多色（主色 #3789F9 蓝 + #53A89A 青绿），用青色区分
   antigravity: {
     light: { bg: '#e0f7fa', text: '#006064' },
     dark: { bg: '#004d40', text: '#80deea' },
+  },
+  // Qoder: deep cyan/blue UI mark, distinct from Gemini and Antigravity.
+  qoder: {
+    light: { bg: '#ddf7ff', text: '#075985' },
+    dark: { bg: '#0b3a4a', text: '#7dd3fc' },
+  },
+  // xAI / Grok: graphite brand treatment, distinct from blue and purple providers
+  xai: {
+    light: { bg: '#f3f4f6', text: '#111827', border: '1px solid #d1d5db' },
+    dark: { bg: '#111827', text: '#f9fafb', border: '1px solid #374151' },
   },
   // iFlow logo: 品红紫渐变 #5C5CFF → #AE5CFF，偏品红以区别于 Qwen 的紫罗兰
   iflow: {
@@ -179,9 +197,10 @@ export const AUTH_FILE_ICONS: Record<string, AuthFileIconAsset> = {
   claude: iconClaude,
   codex: iconCodex,
   gemini: iconGemini,
-  'gemini-cli': iconGemini,
+  xai: { light: iconGrok, dark: iconGrokDark },
   iflow: iconIflow,
   kimi: { light: iconKimiLight, dark: iconKimiDark },
+  qoder: iconQoder,
   qwen: iconQwen,
   vertex: iconVertex,
 };
@@ -199,7 +218,24 @@ export const resolveQuotaErrorMessage = (
   return fallback;
 };
 
-export const normalizeProviderKey = (value: string) => value.trim().toLowerCase();
+export const normalizeProviderKey = normalizeOAuthProviderKey;
+
+export const buildOAuthProviderOptions = (values: Iterable<unknown>): string[] => {
+  const extraProviders = new Set<string>();
+
+  Array.from(values).forEach((value) => {
+    const key = normalizeProviderKey(String(value ?? ''));
+    if (!key || OAUTH_PROVIDER_EXCLUDES.has(key)) return;
+    extraProviders.add(key);
+  });
+
+  const baseSet = new Set(OAUTH_PROVIDER_PRESETS.map((value) => normalizeProviderKey(value)));
+  const extraList = Array.from(extraProviders)
+    .filter((value) => !baseSet.has(value))
+    .sort((a, b) => a.localeCompare(b));
+
+  return [...OAUTH_PROVIDER_PRESETS, ...extraList];
+};
 
 export const getAuthFileStatusMessage = (file: AuthFileItem): string => {
   const raw = file['status_message'] ?? file.statusMessage;
@@ -212,15 +248,16 @@ export const hasAuthFileStatusMessage = (file: AuthFileItem): boolean =>
   getAuthFileStatusMessage(file).length > 0;
 
 export const getTypeLabel = (t: TFunction, type: string): string => {
-  const key = `auth_files.filter_${type}`;
+  const providerKey = normalizeProviderKey(type);
+  const key = `auth_files.filter_${providerKey}`;
   const translated = t(key);
   if (translated !== key) return translated;
-  if (type.toLowerCase() === 'iflow') return 'iFlow';
+  if (providerKey === 'iflow') return 'iFlow';
   return type.charAt(0).toUpperCase() + type.slice(1);
 };
 
 export const getTypeColor = (type: string, resolvedTheme: ResolvedTheme): ThemeColors => {
-  const set = TYPE_COLORS[type] || TYPE_COLORS.unknown;
+  const set = TYPE_COLORS[normalizeProviderKey(type)] || TYPE_COLORS.unknown;
   return resolvedTheme === 'dark' && set.dark ? set.dark : set.light;
 };
 
@@ -279,7 +316,7 @@ export const parseDisableCoolingValue = (value: unknown): boolean | undefined =>
 };
 
 export const readCodexAuthFileWebsockets = (value: Record<string, unknown>): boolean =>
-  parseDisableCoolingValue(value.websockets) ?? false;
+  parseDisableCoolingValue(value.websockets ?? value.websocket) ?? false;
 
 export const applyCodexAuthFileWebsockets = (
   value: Record<string, unknown>,
@@ -305,7 +342,7 @@ export const formatModified = (item: AuthFileItem): string => {
   const date =
     Number.isFinite(asNumber) && !Number.isNaN(asNumber)
       ? new Date(asNumber < 1e12 ? asNumber * 1000 : asNumber)
-      : parseTimestamp(raw) ?? new Date(String(raw));
+      : (parseTimestamp(raw) ?? new Date(String(raw)));
   return Number.isNaN(date.getTime()) ? '-' : date.toLocaleString();
 };
 

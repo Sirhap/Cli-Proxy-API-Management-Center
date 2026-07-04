@@ -29,6 +29,7 @@ import {
   getTypeColor,
   getTypeLabel,
   isRuntimeOnlyAuthFile,
+  normalizeProviderKey,
   parsePriorityValue,
   type QuotaProviderType,
   type ResolvedTheme,
@@ -93,12 +94,13 @@ export function AuthFileCard(props: AuthFileCardProps) {
     failure: normalizeUsageTotal(file.failed),
   };
   const isRuntimeOnly = isRuntimeOnlyAuthFile(file);
-  const isAistudio = (file.type || '').toLowerCase() === 'aistudio';
-  const isWindsurf = (file.type || '').toLowerCase() === 'windsurf';
+  const providerKey = normalizeProviderKey(String(file.type ?? file.provider ?? 'unknown'));
+  const isAistudio = providerKey === 'aistudio';
+  const isWindsurf = providerKey === 'windsurf';
   const showModelsButton = !isRuntimeOnly || isAistudio;
-  const typeColor = getTypeColor(file.type || 'unknown', resolvedTheme);
-  const typeLabel = getTypeLabel(t, file.type || 'unknown');
-  const providerIcon = getAuthFileIcon(file.type || 'unknown', resolvedTheme);
+  const typeColor = getTypeColor(providerKey, resolvedTheme);
+  const typeLabel = getTypeLabel(t, providerKey);
+  const providerIcon = getAuthFileIcon(providerKey, resolvedTheme);
 
   const quotaType =
     quotaFilterType && resolveQuotaType(file) === quotaFilterType ? quotaFilterType : null;
@@ -112,13 +114,15 @@ export function AuthFileCard(props: AuthFileCardProps) {
         ? styles.claudeCard
         : quotaType === 'codex'
           ? styles.codexCard
-          : quotaType === 'gemini-cli'
-            ? styles.geminiCliCard
-            : quotaType === 'kimi'
-              ? styles.kimiCard
+          : quotaType === 'kimi'
+            ? styles.kimiCard
+            : quotaType === 'qoder'
+              ? styles.qoderCard
               : quotaType === 'windsurf'
                 ? styles.kimiCard
-              : '';
+                : quotaType === 'xai'
+                  ? styles.xaiCard
+                  : '';
 
   const rawAuthIndex = file['auth_index'] ?? file.authIndex;
   const authIndexKey = normalizeRecentRequestAuthIndex(rawAuthIndex);

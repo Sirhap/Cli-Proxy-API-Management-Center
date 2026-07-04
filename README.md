@@ -8,13 +8,13 @@ A single-file Web UI (React + TypeScript) for operating and troubleshooting the 
 
 `kaitranntt/Cli-Proxy-API-Management-Center` is maintained as the dashboard release stream for **CLIProxyAPIPlus**. Fork releases publish `management.html` assets that CLIProxyAPIPlus can download and bundle independently from the upstream dashboard.
 
-- Clean upstream updates are merged by the `Upstream Sync` workflow after `npm ci`, `npm run lint`, and `npm run build` pass.
+- Clean upstream updates are merged by the `Upstream Sync` workflow after the package-manager gate and build pass.
 - Conflicts or failed gates update a single assigned `upstream-sync-blocked` issue.
 - Fork-only release tags use the upstream-compatible `vX.Y.Z-N` suffix pattern when an extra dashboard asset is needed.
 
 **Main Project**: https://github.com/router-for-me/CLIProxyAPI  
 **Example URL**: https://remote.router-for.me/  
-**Minimum Required Version**: ≥ 6.8.0 (recommended ≥ 6.8.15)
+**Minimum Required Version**: ≥ 7.1.0 (recommended latest)
 
 Since version 6.0.19, the Web UI ships with the main program; access it via `/management.html` on the API port once the service is running.
 
@@ -36,8 +36,8 @@ The address is auto-detected from the current page URL; manual override is suppo
 ### Option B: Run the dev server
 
 ```bash
-npm install
-npm run dev
+bun install --frozen-lockfile
+bun run dev
 ```
 
 Open `http://localhost:5173`, then connect to your CLI Proxy API backend instance.
@@ -45,13 +45,13 @@ Open `http://localhost:5173`, then connect to your CLI Proxy API backend instanc
 ### Option C: Build a single HTML file
 
 ```bash
-npm install
-npm run build
+bun install --frozen-lockfile
+bun run build
 ```
 
 - Output: `dist/index.html` (all assets are inlined).
 - For CLI Proxy API bundling, the release workflow renames it to `management.html`.
-- To preview locally: `npm run preview`
+- To preview locally: `bun run preview`
 
 Tip: opening `dist/index.html` via `file://` may be blocked by browser CORS; serving it (preview/static server) is more reliable.
 
@@ -77,46 +77,44 @@ This is different from the proxy `api-keys` you manage inside the UI (those are 
 ### Remote management
 
 If you connect from a non-localhost browser, the server must allow remote management (e.g. `allow-remote-management: true`).  
-See `api.md` for the full authentication rules, server-side limits, and edge cases.
+Check the CLI Proxy API server documentation/config comments for the full authentication rules, server-side limits, and edge cases.
 
 ## What you can manage (mapped to the UI pages)
 
 - **Dashboard**: connection status, server version/build date, quick counts, model availability snapshot.
-- **Basic Settings**: debug, proxy URL, request retry, quota fallback (switch project or preview models when limits reached), request logging, file logging, WebSocket auth.
-- **API Keys**: manage proxy `api-keys` (add/edit/delete).
+- **Config Panel**: visual editor for common `config.yaml` fields, basic settings, proxy `api-keys`, and source editing with YAML highlighting/search plus a save diff preview.
 - **AI Providers**:
   - Gemini/Codex/Claude/Vertex key entries (base URL, headers, proxy, model aliases, excluded models, prefix).
   - OpenAI-compatible providers (multiple API keys, custom headers, model alias import via `/v1/models`, optional browser-side "chat/completions" test).
-  - Ampcode integration (upstream URL/key, force mappings, model mapping table).
 - **Auth Files**: upload/download/delete JSON credentials, filter/search/pagination, runtime-only indicators, view supported models per credential (when the server supports it), manage OAuth excluded models (supports `*` wildcards), configure OAuth model alias mappings.
-- **OAuth**: start OAuth/device flows for supported providers, poll status, optionally submit callback `redirect_url`; includes iFlow cookie import.
-- **Quota Management**: manage quota limits and usage for Claude, Antigravity, Codex, Gemini CLI, and other providers.
+- **OAuth**: start OAuth/device flows for Codex, Anthropic/Claude, Antigravity, Kimi, Qoder, and xAI/Grok; poll status; submit callback URLs or xAI/Grok displayed codes; import Vertex JSON credentials and iFlow cookies.
+- **Quota Management**: manage quota limits and usage for Claude, Antigravity, Codex, Kimi, Qoder, xAI/Grok, and other providers.
 - **Usage Statistics**: view request totals, token totals, hourly trends, and per API/model usage from `/v0/management/usage`.
-- **Config**: edit `/config.yaml` in-browser with YAML highlighting + search, then save/reload.
 - **Logs**: tail logs with incremental polling, auto-refresh, search, hide management traffic, clear logs; download request error log files.
-- **System**: quick links + fetch `/v1/models` (grouped view). Requires at least one proxy API key to query models.
+- **System**: quick links, update check, request logging toggle, local login data cleanup, and fetch `/v1/models` (grouped view). Requires at least one proxy API key to query models.
 
 ## Tech Stack
 
-- React 19 + TypeScript 5.9
-- Vite 7 (single-file build)
+- React 19 + TypeScript 6.0
+- Vite 8 (single-file build)
 - Zustand (state management)
 - Axios (HTTP client)
 - react-router-dom v7 (HashRouter)
-- Chart.js (data visualization)
+- Motion (animations)
 - CodeMirror 6 (YAML editor)
 - SCSS Modules (styling)
 - i18next (internationalization)
 
 ## Internationalization
 
-Currently supports three languages:
+Currently supports four languages:
 
 - English (en)
 - Simplified Chinese (zh-CN)
+- Traditional Chinese (zh-TW)
 - Russian (ru)
 
-The UI language is automatically detected from browser settings and can be manually switched at the bottom of the page.
+The UI language is automatically detected from browser settings and can be manually switched from the login page or header language menu.
 
 ## Browser Compatibility
 
@@ -127,9 +125,9 @@ The UI language is automatically detected from browser settings and can be manua
 ## Build & release notes
 
 - Vite produces a **single HTML** output (`dist/index.html`) with all assets inlined (via `vite-plugin-singlefile`).
-- Tagging `vX.Y.Z` or dispatching `.github/workflows/release.yml` with a tag publishes `dist/management.html`.
+- Tagging `vX.Y.Z` triggers `.github/workflows/release.yml` to publish `dist/management.html`.
 - The maintained fork may use `vX.Y.Z-N` release tags for fork-owned dashboard builds.
-- The UI version shown in the footer is injected at build time (env `VERSION`, git tag, or `package.json` fallback).
+- The UI version shown on the System page is injected at build time (env `VERSION`, git tag, or `package.json` fallback).
 
 ## Security notes
 
@@ -147,12 +145,12 @@ The UI language is automatically detected from browser settings and can be manua
 ## Development
 
 ```bash
-npm run dev        # Vite dev server
-npm run build      # tsc + Vite build
-npm run preview    # serve dist locally
-npm run lint       # ESLint (fails on warnings)
-npm run format     # Prettier
-npm run type-check # tsc --noEmit
+bun run dev        # Vite dev server
+bun run build      # tsc + Vite build
+bun run preview    # serve dist locally
+bun run lint       # ESLint (fails on warnings)
+bun run format     # Prettier
+bun run type-check # tsc --noEmit
 ```
 
 ## Contributing
@@ -161,7 +159,7 @@ Issues and PRs are welcome. Please include:
 
 - Reproduction steps (server version + UI version)
 - Screenshots for UI changes
-- Verification notes (`npm run lint`, `npm run type-check`)
+- Verification notes (`bun run lint`, `bun run type-check`, `bun run build`)
 
 ## License
 
